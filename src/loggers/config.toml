@@ -1,0 +1,2 @@
+[log_files]
+file_names = ["ext_integrations", "salla_plugin", "zid_plugin"]
