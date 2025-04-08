@@ -2,10 +2,15 @@ use std::{fs::read_to_string, path::Path, sync::Once};
 
 use chrono::Local;
 use fern::Dispatch;
+use lazy_static::lazy_static;
 use serde::Deserialize;
 use toml::from_str;
 
 static INIT: Once = Once::new();
+
+lazy_static! {
+    static ref CONFIG: Config = load_config();
+}
 
 #[derive(Deserialize, Debug)]
 struct Config {
@@ -23,10 +28,8 @@ fn load_config() -> Config {
     from_str(&config_content).expect("Failed to parse the configuration file")
 }
 
-#[allow(dead_code)]
 pub fn setup_logger() {
-    let config = load_config();
-    let file_names = config.log_files.file_names;
+    let file_names = CONFIG.log_files.file_names.clone();
     let current_date = Local::now().format("%Y-%m-%d").to_string();
 
     INIT.call_once(|| {

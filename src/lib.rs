@@ -14,7 +14,6 @@ use loggers::setup::setup_logger;
 use routes::integrations::configure;
 use utilities::cache::Cache;
 
-mod config;
 mod errors;
 mod events;
 mod handlers;
@@ -27,7 +26,7 @@ mod schema;
 mod tasks;
 mod utilities;
 
-pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+pub type DbPool = Arc<r2d2::Pool<ConnectionManager<PgConnection>>>;
 
 pub struct IntegrationApp {
     pub port: u16,

@@ -4,3 +4,4 @@ test.json
 Cargo.lock
 /.env
 diesel.toml
+/.cargo

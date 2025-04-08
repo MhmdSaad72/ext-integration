@@ -1,19 +1,13 @@
-use std::sync::Arc;
-
 use actix_web::{
     post,
     web::{self, Data, Json},
     HttpResponse,
 };
-use diesel::{
-    insert_into,
-    prelude::*,
-    r2d2::{ConnectionManager, Pool},
-};
+use diesel::{insert_into, prelude::*, r2d2::ConnectionManager};
 use log::info;
 use serde_json::{json, Value};
 
-use crate::{errors::app_error::AppError, schema::salla_webhooks, utilities::cache::Cache};
+use crate::{errors::app_error::AppError, schema::salla_webhooks, utilities::cache::Cache, DbPool};
 use crate::{
     models::salla_model::{NewWebhook, SallaWebhook},
     observers::salla_observer::SallaWebhooksObserver,
@@ -21,7 +15,7 @@ use crate::{
 
 #[post("salla-plugin/webhooks")]
 pub async fn handle_webhook_events(
-    conn: Data<Arc<Pool<ConnectionManager<PgConnection>>>>,
+    conn: Data<DbPool>,
     cache: Data<Cache>,
     body: Json<Value>,
 ) -> Result<HttpResponse, AppError> {
@@ -70,7 +64,7 @@ pub async fn handle_webhook_events(
             .get_result(connection)
             .map_err(|e| AppError::from(e));
 
-        let model = result.unwrap();
+        let model: SallaWebhook = result.unwrap();
         SallaWebhooksObserver::created(&model, conn, cache);
         Ok::<_, AppError>(())
     })

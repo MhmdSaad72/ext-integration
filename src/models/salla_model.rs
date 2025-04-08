@@ -1,4 +1,5 @@
 use diesel::prelude::*;
+use serde::Serialize;
 use serde_json::Value;
 
 use crate::schema::salla_webhooks;
@@ -13,7 +14,7 @@ pub struct NewWebhook {
     pub payload: Value,
 }
 
-#[derive(Queryable, Selectable)]
+#[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = salla_webhooks)]
 #[allow(dead_code)]
 pub struct SallaWebhook {
