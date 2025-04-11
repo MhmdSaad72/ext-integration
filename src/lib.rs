@@ -17,6 +17,7 @@ use utilities::cache::Cache;
 mod errors;
 mod events;
 mod handlers;
+mod helpers;
 mod loggers;
 mod middlewares;
 mod models;

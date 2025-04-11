@@ -26,7 +26,7 @@ impl SallaWebhooksObserver {
         if let Some(handler) = Self::get_event_handler(&model.event) {
             if !cache.has(cache_key) {
                 cache.insert(cache_key, 60);
-                if let Err(_e) = handler.handle(model) {
+                if let Err(_e) = handler.handle(model, db_pool.clone()) {
                     error!(target: "salla_plugin", "Salla Plugin Webhook Event Named {} Has No Handler", model.event);
                 } else {
                     let conn = &mut db_pool.get().expect("error");

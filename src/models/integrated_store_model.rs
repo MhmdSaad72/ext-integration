@@ -38,8 +38,6 @@ pub struct IntegratedStore {
 impl IntegratedStore {
     pub fn find_by_shop_id(_shop_id: String, conn: Data<DbPool>) -> Result<Self, AppError> {
         use self::integrated_stores::dsl::*;
-
-        // let _result = web::block(move || {}).await?;
         let connection = &mut conn.get().map_err(|_| AppError::DatabaseError {
             field: "connection".into(),
             source: diesel::result::Error::DatabaseError(
@@ -48,7 +46,7 @@ impl IntegratedStore {
             ),
         })?;
 
-        let result = integrated_stores
+        let integrated_store = integrated_stores
             .filter(shop_id.eq(_shop_id))
             .select(IntegratedStore::as_select())
             .first::<IntegratedStore>(connection)
@@ -56,6 +54,6 @@ impl IntegratedStore {
                 field: "shop_id".into(),
                 source: diesel::result::Error::NotFound,
             })?;
-        Ok(result)
+        Ok::<IntegratedStore, AppError>(integrated_store)
     }
 }

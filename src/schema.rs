@@ -7,25 +7,6 @@ pub mod sql_types {
 }
 
 diesel::table! {
-    cache (key) {
-        #[max_length = 255]
-        key -> Varchar,
-        value -> Text,
-        expiration -> Int4,
-    }
-}
-
-diesel::table! {
-    cache_locks (key) {
-        #[max_length = 255]
-        key -> Varchar,
-        #[max_length = 255]
-        owner -> Varchar,
-        expiration -> Int4,
-    }
-}
-
-diesel::table! {
     carriers (id) {
         id -> Int8,
         carrier -> Varchar,
@@ -41,19 +22,6 @@ diesel::table! {
         handler_class -> Nullable<Varchar>,
         def_service_id -> Nullable<Int8>,
         request_urls -> Nullable<Json>,
-    }
-}
-
-diesel::table! {
-    failed_jobs (id) {
-        id -> Int8,
-        #[max_length = 255]
-        uuid -> Varchar,
-        connection -> Text,
-        queue -> Text,
-        payload -> Text,
-        exception -> Text,
-        failed_at -> Timestamp,
     }
 }
 
@@ -120,55 +88,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    job_batches (id) {
-        #[max_length = 255]
-        id -> Varchar,
-        #[max_length = 255]
-        name -> Varchar,
-        total_jobs -> Int4,
-        pending_jobs -> Int4,
-        failed_jobs -> Int4,
-        failed_job_ids -> Text,
-        options -> Nullable<Text>,
-        cancelled_at -> Nullable<Int4>,
-        created_at -> Int4,
-        finished_at -> Nullable<Int4>,
-    }
-}
-
-diesel::table! {
-    jobs (id) {
-        id -> Int8,
-        #[max_length = 255]
-        queue -> Varchar,
-        payload -> Text,
-        attempts -> Int2,
-        reserved_at -> Nullable<Int4>,
-        available_at -> Int4,
-        created_at -> Int4,
-    }
-}
-
-diesel::table! {
-    migrations (id) {
-        id -> Int4,
-        #[max_length = 255]
-        migration -> Varchar,
-        batch -> Int4,
-    }
-}
-
-diesel::table! {
-    password_reset_tokens (email) {
-        #[max_length = 255]
-        email -> Varchar,
-        #[max_length = 255]
-        token -> Varchar,
-        created_at -> Nullable<Timestamp>,
-    }
-}
-
-diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::AvailabilityStatus;
 
@@ -203,49 +122,10 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    sessions (id) {
-        #[max_length = 255]
-        id -> Varchar,
-        user_id -> Nullable<Int8>,
-        #[max_length = 45]
-        ip_address -> Nullable<Varchar>,
-        user_agent -> Nullable<Text>,
-        payload -> Text,
-        last_activity -> Int4,
-    }
-}
-
-diesel::table! {
-    users (id) {
-        id -> Int8,
-        #[max_length = 255]
-        name -> Varchar,
-        #[max_length = 255]
-        email -> Varchar,
-        email_verified_at -> Nullable<Timestamp>,
-        #[max_length = 255]
-        password -> Varchar,
-        #[max_length = 100]
-        remember_token -> Nullable<Varchar>,
-        created_at -> Nullable<Timestamp>,
-        updated_at -> Nullable<Timestamp>,
-    }
-}
-
 diesel::allow_tables_to_appear_in_same_query!(
-    cache,
-    cache_locks,
     carriers,
-    failed_jobs,
     integrated_stores,
     integration_platforms,
-    job_batches,
-    jobs,
-    migrations,
-    password_reset_tokens,
     platform_groups,
     salla_webhooks,
-    sessions,
-    users,
 );
