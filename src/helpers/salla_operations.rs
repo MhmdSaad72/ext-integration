@@ -17,15 +17,15 @@ impl SallaApiClient {
         }
     }
 
-    // pub async fn get_store_info(&self) -> Result<HttpResponse, reqwest::Error> {
-    //     let url = format!("{}/store", self.base_url);
-    //     let response = self
-    //         .client
-    //         .get(&url)
-    //         .header("Authorization", format!("Bearer {}", self.access_token))
-    //         .send()
-    //         .await?;
+    pub async fn get_store_info(&self) -> Result<HttpResponse, reqwest::Error> {
+        let url = format!("{}/store", self.base_url);
+        let response = self
+            .client
+            .get(&url)
+            .header("Authorization", format!("Bearer {}", self.access_token))
+            .send()
+            .await?;
 
-    //     Ok(HttpResponse::Ok().json(response.json::<serde_json::Value>().await?))
-    // }
+        Ok(HttpResponse::Ok().json(response.json::<serde_json::Value>().await?))
+    }
 }

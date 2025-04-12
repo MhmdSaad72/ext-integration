@@ -2,6 +2,7 @@ use actix_web::web::Data;
 use serde_json::json;
 
 use crate::{
+    helpers::salla_operations::SallaApiClient,
     models::{integrated_store_model::IntegratedStore, salla_model::SallaWebhook},
     DbPool,
 };
@@ -11,16 +12,16 @@ use super::EventHandler;
 pub struct StoreAuthorize;
 impl EventHandler for StoreAuthorize {
     fn handle(&self, model_data: &SallaWebhook, db_pool: Data<DbPool>) -> Result<(), String> {
-        let merchant_id = model_data.merchant_id;
-        let mut payload = model_data.payload.clone();
-        payload["platform"] = json!("salla_plugin");
-        payload["shop_id"] = json!(merchant_id);
-        let store = IntegratedStore::find_by_shop_id(merchant_id.to_string(), db_pool);
+        let payload = model_data.payload.clone();
+        let access_token = payload["access_token"]
+            .as_str()
+            .ok_or("Access token not found")?;
+        let salla_client = SallaApiClient::new(access_token);
+        let store_info = salla_client
+            .get_store_info()
+            .await
+            .map_err(|e| format!("Failed to get store info: {}", e))?;
 
-        if store.is_err() {
-            return Err(format!("Order ({}) received and will be ignored, Store Ability to create awbs from API requests is disabled", payload["order_id"]));
-        }
-        // info!(target: "salla_plugin", "Store Authorize payload: {}", json!(payload).to_string());
         // println!("Event Handler from store authorize");
         Ok(())
     }
