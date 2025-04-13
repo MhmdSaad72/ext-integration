@@ -34,10 +34,14 @@ pub fn setup_logger() {
 
     INIT.call_once(|| {
         // Create a new Fern dispatcher
-        let mut base_dispatcher = Dispatch::new().format(|out, message, _record| {
+        let mut base_dispatcher = Dispatch::new().format(|out, message, record| {
+            dotenv::dotenv().ok();
+            let app_env = std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string());
             out.finish(format_args!(
-                "[{}] {}",
+                "[{}] {}.{}: {}",
                 Local::now().format("%Y-%m-%d %H:%M:%S"),
+                app_env,
+                record.level(),
                 message
             ))
         });

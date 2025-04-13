@@ -1,5 +1,6 @@
-use actix_web::HttpResponse;
-use reqwest::Client;
+use std::error::Error;
+
+use reqwest::{Client, Response};
 
 pub struct SallaApiClient {
     client: Client,
@@ -17,15 +18,14 @@ impl SallaApiClient {
         }
     }
 
-    pub async fn get_store_info(&self) -> Result<HttpResponse, reqwest::Error> {
-        let url = format!("{}/store", self.base_url);
-        let response = self
-            .client
+    pub async fn get_store_info(&self) -> Result<Response, Box<dyn Error + Send + Sync>> {
+        let url = format!("{}store/info", self.base_url);
+        self.client
             .get(&url)
             .header("Authorization", format!("Bearer {}", self.access_token))
             .send()
-            .await?;
-
-        Ok(HttpResponse::Ok().json(response.json::<serde_json::Value>().await?))
+            .await?
+            .error_for_status()
+            .map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)
     }
 }

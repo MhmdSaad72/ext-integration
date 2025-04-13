@@ -3,11 +3,16 @@ use actix_web::{
     web::{self, Data, Json},
     HttpResponse,
 };
-use diesel::{insert_into, prelude::*, r2d2::ConnectionManager};
+use diesel::{insert_into, prelude::*};
 use log::info;
 use serde_json::{json, Value};
 
-use crate::{errors::app_error::AppError, schema::salla_webhooks, utilities::cache::Cache, DbPool};
+use crate::{
+    errors::app_error::AppError,
+    schema::salla_webhooks,
+    utilities::{cache::Cache, database::get_db_connection},
+    DbPool,
+};
 use crate::{
     models::salla_model::{NewWebhook, SallaWebhook},
     observers::salla_observer::SallaWebhooksObserver,
@@ -48,27 +53,25 @@ pub async fn handle_webhook_events(
         order_reference_id: _order_reference_id,
         payload: _payload,
     };
-    let _result = web::block(move || {
-        let connection: &mut diesel::r2d2::PooledConnection<ConnectionManager<PgConnection>> =
-            &mut conn.get().map_err(|_| AppError::DatabaseError {
-                field: "connection".into(),
-                source: diesel::result::Error::DatabaseError(
-                    diesel::result::DatabaseErrorKind::UnableToSendCommand,
-                    Box::new("Failed to get database connection".to_string()),
-                ),
-            })?;
+    // Check if the event is already processed
+    let conn_clone = conn.clone();
+    let result = web::block(move || {
+        let connection = &mut get_db_connection(conn)?;
 
-        let result: Result<SallaWebhook, AppError> = insert_into(salla_webhooks)
+        insert_into(salla_webhooks)
             .values(&new_hook)
             .returning(SallaWebhook::as_returning())
             .get_result(connection)
-            .map_err(|e| AppError::from(e));
-
-        let model: SallaWebhook = result.unwrap();
-        SallaWebhooksObserver::created(&model, conn, cache);
-        Ok::<_, AppError>(())
+            .map_err(|e| AppError::from(e))
     })
     .await?;
 
-    Ok(HttpResponse::Ok().json(json!({ "success": true, "data": "Received" })))
+    // Handle the `Result` properly
+    return match result {
+        Ok(model) => {
+            SallaWebhooksObserver::created(&model, conn_clone, cache).await;
+            Ok(HttpResponse::Ok().json(json!({ "success": true, "data": "Received" })))
+        }
+        Err(e) => Err(e),
+    };
 }

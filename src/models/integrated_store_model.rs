@@ -1,4 +1,4 @@
-use crate::schema::integrated_stores;
+use crate::{schema::integrated_stores, utilities::database::get_db_connection};
 use actix_web::web::Data;
 use diesel::prelude::*;
 use serde::Serialize;
@@ -36,15 +36,9 @@ pub struct IntegratedStore {
 }
 
 impl IntegratedStore {
-    pub fn find_by_shop_id(_shop_id: String, conn: Data<DbPool>) -> Result<Self, AppError> {
+    pub async fn find_by_shop_id(_shop_id: String, conn: Data<DbPool>) -> Result<Self, AppError> {
         use self::integrated_stores::dsl::*;
-        let connection = &mut conn.get().map_err(|_| AppError::DatabaseError {
-            field: "connection".into(),
-            source: diesel::result::Error::DatabaseError(
-                diesel::result::DatabaseErrorKind::UnableToSendCommand,
-                Box::new("Failed to get database connection".to_string()),
-            ),
-        })?;
+        let connection = &mut get_db_connection(conn)?;
 
         let integrated_store = integrated_stores
             .filter(shop_id.eq(_shop_id))

@@ -10,24 +10,26 @@ use crate::{
     DbPool,
 };
 pub struct SallaWebhooksObserver;
+type EventHandlerBox = Box<dyn EventHandler + Send + Sync>;
 
 impl SallaWebhooksObserver {
-    pub fn get_event_handler(event: &str) -> Option<Box<dyn EventHandler>> {
+    pub fn get_event_handler(event: &str) -> Option<EventHandlerBox> {
         match event {
             "shipment.creating" => Some(Box::new(ShipmentCreating)),
             "app.store.authorize" => Some(Box::new(StoreAuthorize)),
             _ => None,
         }
     }
-    pub fn created(model: &SallaWebhook, db_pool: Data<DbPool>, cache: Data<Cache>) {
+    pub async fn created(model: &SallaWebhook, db_pool: Data<DbPool>, cache: Data<Cache>) {
         use self::salla_webhooks::dsl::*;
         let cache_key = &Self::generate_cache_key(model);
 
         if let Some(handler) = Self::get_event_handler(&model.event) {
             if !cache.has(cache_key) {
                 cache.insert(cache_key, 60);
-                if let Err(_e) = handler.handle(model, db_pool.clone()) {
-                    error!(target: "salla_plugin", "Salla Plugin Webhook Event Named {} Has No Handler", model.event);
+
+                if let Err(_e) = handler.handle(model, db_pool.clone()).await {
+                    // error!(target: "salla_plugin", "Salla Plugin Webhook Event Named {} Has No Handler", model.event);
                 } else {
                     let conn = &mut db_pool.get().expect("error");
                     diesel::update(salla_webhooks.find(model.id))
