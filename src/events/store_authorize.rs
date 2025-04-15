@@ -37,10 +37,10 @@ impl EventHandler for StoreAuthorize {
         let data = store_info.json::<Value>().await?;
 
         let shop_id = data["data"]["id"].as_str().ok_or("Shop ID not found")?;
-        let store_exit = IntegratedStore::find_by_shop_id(shop_id.to_string(), db_pool).await;
+        let store_exit = IntegratedStore::find_by_shop_id(shop_id.to_string(), &db_pool).await;
         if store_exit.is_ok() {
-            error!(target: "salla_plugin", "Store already exists");
-            return Err("Store already exists".into());
+            store_exit.unwrap().update_store(data, &db_pool).await?;
+            return Ok(());
         }
         // let shop_id =
         // error!(target: "salla_plugin", "Store info: {:?}", store_info.json::<Value>().await);

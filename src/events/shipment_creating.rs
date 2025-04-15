@@ -26,7 +26,7 @@ impl EventHandler for ShipmentCreating {
         let mut payload = model_data.payload.clone();
         payload["platform"] = json!("salla_plugin");
         payload["shop_id"] = json!(merchant_id);
-        let store = IntegratedStore::find_by_shop_id(merchant_id.to_string(), db_pool);
+        let _store = IntegratedStore::find_by_shop_id(merchant_id.to_string(), &db_pool);
 
         // if store.is_err() {
         //     return Err(format!("Order ({}) received and will be ignored, Store Ability to create awbs from API requests is disabled", payload["order_id"]));

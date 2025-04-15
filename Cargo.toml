@@ -21,7 +21,7 @@ thiserror = "2.0.11"
 futures = "0.3.31"
 log = "0.4.26"
 futures-util = "0.3.31"
-chrono = "0.4.40"
+chrono = { version = "0.4.40", features = ["serde"] }
 derive_more = "2.0.1"
 fern = "0.7.1"
 lazy_static = "1.5.0"

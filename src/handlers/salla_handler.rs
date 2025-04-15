@@ -56,7 +56,7 @@ pub async fn handle_webhook_events(
     // Check if the event is already processed
     let conn_clone = conn.clone();
     let result = web::block(move || {
-        let connection = &mut get_db_connection(conn)?;
+        let connection = &mut get_db_connection(&conn)?;
 
         insert_into(salla_webhooks)
             .values(&new_hook)

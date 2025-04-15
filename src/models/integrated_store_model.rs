@@ -36,7 +36,7 @@ pub struct IntegratedStore {
 }
 
 impl IntegratedStore {
-    pub async fn find_by_shop_id(_shop_id: String, conn: Data<DbPool>) -> Result<Self, AppError> {
+    pub async fn find_by_shop_id(_shop_id: String, conn: &Data<DbPool>) -> Result<Self, AppError> {
         use self::integrated_stores::dsl::*;
         let connection = &mut get_db_connection(conn)?;
 
@@ -49,5 +49,28 @@ impl IntegratedStore {
                 source: diesel::result::Error::NotFound,
             })?;
         Ok::<IntegratedStore, AppError>(integrated_store)
+    }
+
+    pub async fn update_store(&self, info: Value, conn: &Data<DbPool>) -> Result<Self, AppError> {
+        use self::integrated_stores::dsl::*;
+        let connection = &mut get_db_connection(conn)?;
+
+        let access_token = info["access_token"].as_str().unwrap_or("").to_string();
+        let ref_token = info["refresh_token"].as_str().unwrap_or("").to_string();
+        let authorization = info["authorization"].as_str().unwrap_or("").to_string();
+
+        let updated_store = diesel::update(integrated_stores.find(self.id))
+            .set((
+                token.eq(access_token),
+                refresh_token.eq(ref_token),
+                webhook_authorization.eq(authorization),
+            ))
+            .returning(Self::as_returning())
+            .get_result(connection)
+            .map_err(|_| AppError::DatabaseError {
+                field: "id".into(),
+                source: diesel::result::Error::NotFound,
+            })?;
+        Ok::<Self, AppError>(updated_store)
     }
 }
