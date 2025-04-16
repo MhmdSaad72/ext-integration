@@ -30,3 +30,6 @@ tokio = { version = "1.44.1", features = ["full"] }
 cached = { version = "0.55.1", features = ["async"] }
 reqwest = { version = "0.12.15", features = ["json"] }
 async-trait = "0.1.88"
+diesel-derive-enum = { version = "2.1.0", features = ["postgres"] }
+rand = "0.9.0"
+argon2 = "0.5.3"

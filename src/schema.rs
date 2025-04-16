@@ -227,7 +227,7 @@ diesel::table! {
         refresh_token -> Text,
         expires -> Int8,
         default_carrier_id -> Int4,
-        integration_platform_id -> Int4,
+        integration_platform_id -> Int8,
         odd_enabled -> Bool,
         new_store_id -> Nullable<Int8>,
         new_assigned_user_id -> Nullable<Int8>,
