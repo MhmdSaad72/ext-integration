@@ -1,6 +1,6 @@
 use actix_web::web::Data;
 use chrono::{DateTime, Utc};
-use diesel::{prelude::*, upsert::excluded};
+use diesel::prelude::*;
 use log::error;
 use serde_json::Value;
 
@@ -38,7 +38,7 @@ pub struct TempStoreIntegration {
     pub authorization_code: Option<String>,
 }
 
-#[derive(Insertable, Debug)]
+#[derive(Insertable, Debug, Default)]
 #[diesel(table_name = temp_stores_integrations)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewTempStoreIntegration {
@@ -53,6 +53,7 @@ pub struct NewTempStoreIntegration {
     pub refresh_token: String,
     pub authorization_code: Option<String>,
     pub expires: i64,
+    pub odd_enabled: bool,
 }
 
 impl TempStoreIntegration {
@@ -119,6 +120,7 @@ fn parse_store_data(info: Value, payload: Value, platform_id: i64) -> NewTempSto
         authorization_code: None,
         expires: payload["data"]["expires"].as_i64().unwrap_or(0),
         default_carrier_id: 2,
+        ..Default::default()
     }
 }
 
@@ -128,33 +130,45 @@ fn insert_or_update_store(
 ) -> Result<TempStoreIntegration, AppError> {
     use self::temp_stores_integrations::dsl::*;
 
-    // let _shop_id = new_data.shop_id;
-    // let _integration_platform_id = new_data.integration_platform_id;
-    let result = diesel::insert_into(temp_stores_integrations)
-        .values(&new_data)
-        .on_conflict((shop_id, integration_platform_id))
-        .do_update()
-        .set((
-            store_name.eq(excluded(store_name)),
-            store_url.eq(excluded(store_url)),
-            email.eq(excluded(email)),
-            auth_code.eq(excluded(auth_code)),
-            default_carrier_id.eq(excluded(default_carrier_id)),
-            access_token.eq(excluded(access_token)),
-            refresh_token.eq(excluded(refresh_token)),
-            authorization_code.eq(excluded(authorization_code)),
-            expires.eq(excluded(expires)),
-        ))
-        .get_result::<TempStoreIntegration>(connection);
+    let temp_store = temp_stores_integrations
+        .filter(shop_id.eq(new_data.shop_id))
+        .filter(integration_platform_id.eq(new_data.integration_platform_id))
+        .first::<TempStoreIntegration>(connection);
 
-    match result {
-        Ok(store) => Ok(store),
-        Err(e) => {
-            error!(target: "salla_plugin", "Error inserting/updating store: {:?}", e);
-            Err(AppError::DatabaseError {
-                field: "temp_store_integration".into(),
-                source: e,
-            })
+    match temp_store {
+        Ok(store) => {
+            diesel::update(temp_stores_integrations.find(store.id))
+                .set((
+                    store_name.eq(new_data.store_name),
+                    store_url.eq(new_data.store_url),
+                    email.eq(new_data.email),
+                    auth_code.eq(new_data.auth_code),
+                    default_carrier_id.eq(new_data.default_carrier_id),
+                    access_token.eq(new_data.access_token),
+                    refresh_token.eq(new_data.refresh_token),
+                    authorization_code.eq(new_data.authorization_code),
+                    expires.eq(new_data.expires),
+                ))
+                .execute(connection)
+                .map_err(|e| {
+                    error!(target: "salla_plugin", "Error updating store: {:?}", e);
+                    AppError::DatabaseError {
+                        field: "temp_store_integration".into(),
+                        source: e,
+                    }
+                })?;
+
+            return Ok(store);
         }
+        Err(_e) => diesel::insert_into(temp_stores_integrations)
+            .values(&new_data)
+            .get_result::<TempStoreIntegration>(connection)
+            .map_err(|e| {
+                error!(target: "salla_plugin", "Error inserting store: {:?}", e);
+                AppError::DatabaseError {
+                    field: "temp_store_integration".into(),
+                    source: e,
+                }
+            }),
     }
 }
