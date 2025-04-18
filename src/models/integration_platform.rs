@@ -19,6 +19,7 @@ pub enum AvailabilityStatus {
 #[derive(Queryable, Selectable, Debug)]
 #[diesel(table_name = integration_platforms)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
+#[allow(dead_code)]
 pub struct IntegrationPlatform {
     pub id: i64,
     pub platform: String,

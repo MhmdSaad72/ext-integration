@@ -7,6 +7,7 @@ use crate::{
 use actix_web::web::Data;
 use chrono::{DateTime, NaiveDate, Utc};
 use diesel::prelude::*;
+use log::error;
 use serde::Serialize;
 
 #[derive(Queryable, Selectable, Serialize)]
@@ -89,16 +90,17 @@ pub struct NewUser {
     pub auto_created: bool,
     pub info_completed: bool,
     pub email_verified_at: DateTime<Utc>,
+    pub affiliation_code: String,
 }
 
 impl User {
-    pub async fn find_by_email(_email: &str, conn: &Data<DbPool>) -> Result<Self, AppError> {
+    pub async fn find_by_email(_email: &str, conn: &Data<DbPool>) -> Result<User, AppError> {
         use crate::schema::users::dsl::*;
         let connection = &mut get_db_connection(conn)?;
         users
             .filter(email.eq(_email))
             .select(User::as_select())
-            .first(connection)
+            .first::<User>(connection)
             .map_err(|_| AppError::DatabaseError {
                 field: "email".into(),
                 source: diesel::result::Error::NotFound,
@@ -109,13 +111,24 @@ impl User {
         use crate::schema::users::dsl::*;
         let connection = &mut get_db_connection(db_pool)?;
 
-        diesel::insert_into(users)
+        let result = diesel::insert_into(users)
             .values(&new_user)
             .returning(User::as_returning())
-            .get_result(connection)
-            .map_err(|_| AppError::DatabaseError {
-                field: "user".into(),
-                source: diesel::result::Error::NotFound,
-            })
+            .get_result::<User>(connection);
+
+        match result {
+            Ok(user) => Ok(user),
+            Err(e) => {
+                error!(target:"salla_plugin","Error creating user: {:?}", e);
+                Err(AppError::DatabaseError {
+                    field: "user".into(),
+                    source: e,
+                })
+            }
+        }
+
+        // Ok(result?) // Return the created user
+
+        // result
     }
 }

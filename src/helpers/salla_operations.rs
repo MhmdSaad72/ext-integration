@@ -1,6 +1,6 @@
-use std::error::Error;
-
+use log::error;
 use reqwest::{Client, Response};
+use std::error::Error;
 
 pub struct SallaApiClient {
     client: Client,
@@ -26,6 +26,9 @@ impl SallaApiClient {
             .send()
             .await?
             .error_for_status()
-            .map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)
+            .map_err(|e| {
+                error!(target: "salla_plugin", "Failed to get store info: {:?}", e);
+                Box::new(e) as Box<dyn Error + Send + Sync>
+            })
     }
 }

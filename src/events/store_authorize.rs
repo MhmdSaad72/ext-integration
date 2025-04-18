@@ -2,12 +2,15 @@ use std::error::Error;
 
 use actix_web::web::Data;
 use async_trait::async_trait;
-use log::error;
+use log::{error, info};
 use serde_json::Value;
 
 use crate::{
     helpers::salla_operations::SallaApiClient,
-    models::{integrated_store_model::IntegratedStore, salla_model::SallaWebhook},
+    models::{
+        integrated_store_model::IntegratedStore, salla_model::SallaWebhook,
+        temp_store_integration::TempStoreIntegration,
+    },
     DbPool,
 };
 
@@ -35,20 +38,21 @@ impl EventHandler for StoreAuthorize {
         })?;
 
         let data = store_info.json::<Value>().await?;
+        let shop_id = data
+            .get("data")
+            .and_then(|d| d.get("id"))
+            .and_then(|id| id.as_i64())
+            .ok_or("Shop ID not found")?;
 
-        let shop_id = data["data"]["id"].as_str().ok_or("Shop ID not found")?;
+        // let shop_id = data["data"]["id"].as_i32().ok_or("Shop ID not found")?;
         let store_exit = IntegratedStore::find_by_shop_id(shop_id.to_string(), &db_pool).await;
         if store_exit.is_ok() {
+            info!(target: "salla_plugin", "Store already exists, updating...");
             store_exit.unwrap().update_store(data, &db_pool).await?;
             return Ok(());
         }
-        // let shop_id =
-        // error!(target: "salla_plugin", "Store info: {:?}", store_info.json::<Value>().await);
-        // if store_info. {
-        //     error!(target: "salla_plugin", "Failed to get store info: {}", store_info.unwrap_err());
-        //     return Err("Failed to get store info".into());
-        // }
-
+        info!(target: "salla_plugin", "Store not found, creating new store...");
+        TempStoreIntegration::update_or_create(data, payload, &db_pool).await?;
         Ok(())
     }
 }

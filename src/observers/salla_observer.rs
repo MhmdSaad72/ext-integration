@@ -28,14 +28,17 @@ impl SallaWebhooksObserver {
             if !cache.has(cache_key) {
                 cache.insert(cache_key, 60);
 
-                if let Err(_e) = handler.handle(model, db_pool.clone()).await {
-                    // error!(target: "salla_plugin", "Salla Plugin Webhook Event Named {} Has No Handler", model.event);
+                if let Err(e) = handler.handle(model, db_pool.clone()).await {
+                    error!(target: "salla_plugin", "Failed to handle event: {}, {}", model.event, e);
                 } else {
                     let conn = &mut db_pool.get().expect("error");
                     diesel::update(salla_webhooks.find(model.id))
                         .set(processed.eq(true))
                         .execute(conn)
-                        .expect("Failed to update payload");
+                        .map_err(|_| {
+                            error!(target: "salla_plugin", "Failed to update webhook status");
+                        })
+                        .unwrap();
                 }
             }
         } else {
