@@ -44,7 +44,6 @@ impl EventHandler for StoreAuthorize {
             .and_then(|id| id.as_i64())
             .ok_or("Shop ID not found")?;
 
-        // let shop_id = data["data"]["id"].as_i32().ok_or("Shop ID not found")?;
         let store_exit = IntegratedStore::find_by_shop_id(shop_id.to_string(), &db_pool).await;
         if store_exit.is_ok() {
             info!(target: "salla_plugin", "Store already exists, updating...");

@@ -9,6 +9,7 @@ use diesel::result::Error as DieselError;
 use serde_json::json;
 
 #[derive(Debug, Display, Error)]
+#[allow(dead_code)]
 pub enum AppError {
     #[display("Bad Request: {field}")]
     BadRequest { field: String },
@@ -18,6 +19,8 @@ pub enum AppError {
     DatabaseError { field: String, source: DieselError },
     #[display("An internal error occurred while processing your request. Please try again later.")]
     BlockingError,
+    #[display("Invalid data provided")]
+    InvalidData,
 }
 
 impl From<diesel::result::Error> for AppError {
@@ -49,6 +52,7 @@ impl ResponseError for AppError {
             AppError::DatabaseError { .. } => HttpResponse::InternalServerError(),
             AppError::BlockingError => HttpResponse::InternalServerError(),
             AppError::BadRequest { .. } => HttpResponse::BadRequest(),
+            AppError::InvalidData => HttpResponse::BadRequest(),
         };
         builder.json(json!({"sucees":false, "error":err}))
     }

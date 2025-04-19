@@ -22,6 +22,7 @@ mod loggers;
 mod middlewares;
 mod models;
 mod observers;
+mod req_mappers;
 mod routes;
 mod schema;
 mod tasks;
